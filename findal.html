@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Fruit Combobox</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 2rem;
+    }
+
+    .fruitbox {
+      position: relative;
+      display: inline-block;
+      width: 240px;
+      margin-bottom: 2rem;
+    }
+
+    .fruitbox-label {
+      margin-bottom: 4px;
+      display: block;
+      font-weight: bold;
+    }
+
+    .fruitbox-input {
+      border: 1px solid #aaa;
+      padding: 8px;
+      cursor: pointer;
+      background: #fff;
+    }
+
+    .fruitbox.open .fruitbox-list {
+      display: block;
+    }
+
+    .fruitbox-list {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: #fff;
+      border: 1px solid #aaa;
+      max-height: 150px;
+      overflow-y: auto;
+      display: none;
+      z-index: 10;
+    }
+
+    .fruitbox-option {
+      padding: 8px;
+      cursor: pointer;
+    }
+
+    .fruitbox-option.option-active {
+      background: #bde4ff;
+    }
+
+    .fruitbox-option[aria-selected='true'] {
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Fruit Combobox -->
+  <div class="fruitbox js-fruitselect">
+    <label id="fruit-label" class="fruitbox-label" for="fruit-combo">Favorite Fruit</label>
+    <div id="fruit-combo"
+         class="fruitbox-input"
+         role="combobox"
+         aria-haspopup="listbox"
+         aria-expanded="false"
+         aria-labelledby="fruit-label"
+         tabindex="0"></div>
+    <div id="fruit-listbox"
+         class="fruitbox-list"
+         role="listbox"
+         aria-labelledby="fruit-label"
+         tabindex="-1"></div>
+  </div>
+
+  <script>
+    class FruitSelect {
+      constructor(container, options) {
+        this.container = container;
+        this.input = container.querySelector('.fruitbox-input');
+        this.list = container.querySelector('.fruitbox-list');
+        this.labelId = this.input.getAttribute('aria-labelledby');
+        this.idBase = this.input.id;
+
+        this.options = options;
+        this.activeIndex = 0;
+        this.search = '';
+        this.searchTimer = null;
+        this.isOpen = false;
+
+        this.renderOptions();
+        this.bindEvents();
+        this.selectOption(0); // default
+      }
+
+      renderOptions() {
+        this.list.innerHTML = '';
+        this.options.forEach((opt, index) => {
+          const div = document.createElement('div');
+          div.className = 'fruitbox-option';
+          div.setAttribute('role', 'option');
+          div.id = `${this.idBase}-option-${index}`;
+          div.setAttribute('aria-selected', 'false');
+          div.textContent = opt;
+          div.addEventListener('click', () => {
+            this.selectOption(index);
+            this.toggleList(false);
+          });
+          this.list.appendChild(div);
+        });
+      }
+
+      bindEvents() {
+        this.input.addEventListener('click', () => this.toggleList(!this.isOpen));
+        this.input.addEventListener('keydown', (e) => this.onKeyDown(e));
+        this.input.addEventListener('blur', () => setTimeout(() => this.toggleList(false), 150));
+      }
+
+      toggleList(show) {
+        this.isOpen = show;
+        this.container.classList.toggle('open', show);
+        this.input.setAttribute('aria-expanded', show);
+      }
+
+      onKeyDown(e) {
+        const max = this.options.length - 1;
+
+        switch (e.key) {
+          case 'ArrowDown':
+            e.preventDefault();
+            this.toggleList(true);
+            this.setActive(Math.min(this.activeIndex + 1, max));
+            break;
+          case 'ArrowUp':
+            e.preventDefault();
+            this.toggleList(true);
+            this.setActive(Math.max(this.activeIndex - 1, 0));
+            break;
+          case 'Home':
+            e.preventDefault();
+            this.setActive(0);
+            break;
+          case 'End':
+            e.preventDefault();
+            this.setActive(max);
+            break;
+          case 'Enter':
+          case ' ':
+            e.preventDefault();
+            if (this.isOpen) {
+              this.selectOption(this.activeIndex);
+              this.toggleList(false);
+            } else {
+              this.toggleList(true);
+            }
+            break;
+          case 'Escape':
+            e.preventDefault();
+            this.toggleList(false);
+            break;
+          default:
+            if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+              this.search += e.key.toLowerCase();
+              this.searchAndActivate();
+              clearTimeout(this.searchTimer);
+              this.searchTimer = setTimeout(() => (this.search = ''), 500);
+            }
+        }
+      }
+
+      setActive(index) {
+        const options = this.list.querySelectorAll('.fruitbox-option');
+        if (index < 0 || index >= options.length) return;
+        options.forEach((opt) => opt.classList.remove('option-active'));
+        options[index].classList.add('option-active');
+        this.input.setAttribute('aria-activedescendant', options[index].id);
+        options[index].scrollIntoView({ block: 'nearest' });
+        this.activeIndex = index;
+      }
+
+      selectOption(index) {
+        const selected = this.options[index];
+        this.input.textContent = selected;
+        const options = this.list.querySelectorAll('.fruitbox-option');
+        options.forEach((opt, i) => {
+          opt.setAttribute('aria-selected', i === index ? 'true' : 'false');
+        });
+        this.setActive(index);
+      }
+
+      searchAndActivate() {
+        const matchIndex = this.options.findIndex(opt =>
+          opt.toLowerCase().startsWith(this.search)
+        );
+        if (matchIndex !== -1) {
+          this.setActive(matchIndex);
+        }
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      const fruitOptions = [
+        'Choose a Fruit',
+        'Apple',
+        'Banana',
+        'Blueberry',
+        'Boysenberry',
+        'Cherry',
+        'Cranberry',
+        'Durian',
+        'Eggplant',
+        'Fig',
+        'Grape',
+        'Guava',
+        'Huckleberry'
+      ];
+
+      document.querySelectorAll('.js-fruitselect').forEach((el) => {
+        new FruitSelect(el, fruitOptions);
+      });
+    });
+  </script>
+
+</body>
+</html>
