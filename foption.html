@@ -302,21 +302,26 @@
       this.toggleList(true);
       this.setActive(max);
       break;
+
     case 'Enter':
       e.preventDefault();
       if (this.isOpen) {
-        // If list is open and option is focused, toggle checkbox
+        // IF focus is on the combobox input (not inside list)
         if (document.activeElement === this.input) {
-          // If focus is on the combobox, close listbox
+          // Just close the listbox (same as clicking outside)
           this.toggleList(false);
+          this.input.focus();
         } else if (checkbox) {
+          // Inside list: toggle checkbox
           checkbox.checked = !checkbox.checked;
           this.toggleSelection(checkbox.value, checkbox.checked, currentOption);
         }
       } else {
+        // Listbox is closed → open it
         this.toggleList(true);
       }
       break;
+
     case ' ':
       e.preventDefault();
       if (this.isOpen && checkbox) {
@@ -326,11 +331,13 @@
         this.toggleList(true);
       }
       break;
+
     case 'Escape':
       e.preventDefault();
       this.toggleList(false);
       this.input.focus();
       break;
+
     default:
       if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
         this.search += e.key.toLowerCase();
