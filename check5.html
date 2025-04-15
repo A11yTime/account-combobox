@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Combobox with Checkboxes</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 2rem;
+    }
+
+    .fruitbox {
+      position: relative;
+      display: inline-block;
+      width: 240px;
+      margin-bottom: 2rem;
+    }
+
+    .fruitbox-label {
+      margin-bottom: 4px;
+      display: block;
+      font-weight: bold;
+    }
+
+    .fruitbox-input {
+      border: 1px solid #aaa;
+      padding: 8px;
+      cursor: pointer;
+      background: #fff;
+    }
+
+    .fruitbox.open .fruitbox-list {
+      display: block;
+    }
+
+    .fruitbox-list {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: #fff;
+      border: 1px solid #aaa;
+      max-height: 200px;
+      overflow-y: auto;
+      display: none;
+      z-index: 10;
+    }
+
+    .fruitbox-option {
+      padding: 6px 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+    }
+
+    .fruitbox-option input {
+      margin-right: 8px;
+    }
+
+    .fruitbox-option.option-active {
+      background: #bde4ff;
+    }
+
+    .fruitbox-list-footer {
+      padding: 8px;
+      border-top: 1px solid #ccc;
+      display: flex;
+      justify-content: space-between;
+      background: #f9f9f9;
+    }
+
+    .fruitbox-list-footer button {
+      padding: 4px 12px;
+      font-size: 0.9rem;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="combobox-container"></div>
+
+  <script>
+    class CheckboxSelect {
+      constructor({ container, labelText, options }) {
+        this.container = container;
+        this.labelText = labelText;
+        this.options = options;
+
+        this.activeIndex = 0;
+        this.search = '';
+        this.searchTimer = null;
+        this.isOpen = false;
+        this.selected = new Set();
+        this.tempSelected = new Set();
+
+        this.idBase = 'fruitbox-' + Math.random().toString(36).slice(2, 8);
+
+        this.renderHTML();
+        this.bindEvents();
+      }
+
+      renderHTML() {
+        this.container.classList.add('fruitbox');
+
+        this.label = document.createElement('label');
+        this.label.className = 'fruitbox-label';
+        this.label.id = this.idBase + '-label';
+        this.label.textContent = this.labelText;
+
+        this.input = document.createElement('div');
+        this.input.className = 'fruitbox-input';
+        this.input.id = this.idBase + '-input';
+        this.input.setAttribute('role', 'combobox');
+        this.input.setAttribute('aria-haspopup', 'listbox');
+        this.input.setAttribute('aria-expanded', 'false');
+        this.input.setAttribute('tabindex', '0');
+        this.input.setAttribute('aria-labelledby', this.label.id);
+
+        this.list = document.createElement('div');
+        this.list.className = 'fruitbox-list';
+        this.list.id = this.idBase + '-list';
+        this.list.setAttribute('role', 'listbox');
+        this.list.setAttribute('aria-labelledby', this.label.id);
+
+        this.container.appendChild(this.label);
+        this.container.appendChild(this.input);
+        this.container.appendChild(this.list);
+
+        this.renderOptions();
+        this.renderFooter();
+        this.updateInputLabel();
+      }
+
+      renderOptions() {
+        this.list.innerHTML = '';
+        this.optionCheckboxes = [];
+
+        this.options.forEach((label, index) => {
+          const wrapper = document.createElement('div');
+          wrapper.className = 'fruitbox-option';
+          wrapper.setAttribute('role', 'option');
+          wrapper.setAttribute('aria-selected', 'false');
+          wrapper.id = `${this.idBase}-option-${index}`;
+          wrapper.tabIndex = -1;
+
+          const checkbox = document.createElement('input');
+          checkbox.type = 'checkbox';
+          checkbox.value = label;
+          checkbox.id = `${this.idBase}-cb-${index}`;
+          checkbox.tabIndex = -1;
+
+          const checkboxLabel = document.createElement('label');
+          checkboxLabel.textContent = label;
+          checkboxLabel.htmlFor = checkbox.id;
+          checkboxLabel.style.cursor = 'pointer';
+
+          // Prevent default to avoid listbox closing
+          checkboxLabel.addEventListener('mousedown', (e) => e.preventDefault());
+
+          checkbox.addEventListener('click', () => {
+            this.toggleSelection(label, checkbox.checked, wrapper);
+          });
+
+          this.list.appendChild(wrapper);
+          wrapper.appendChild(checkbox);
+          wrapper.appendChild(checkboxLabel);
+
+          this.optionCheckboxes.push({ checkbox, wrapper, label });
+        });
+      }
+
+      renderFooter() {
+        const footer = document.createElement('div');
+        footer.className = 'fruitbox-list-footer';
+
+        const saveBtn = document.createElement('button');
+        saveBtn.textContent = 'Save';
+        saveBtn.type = 'button';
+        saveBtn.addEventListener('click', () => {
+          this.tempSelected = new Set(this.selected);
+          this.toggleList(false);
+          this.input.focus(); // Send focus back to combobox field
+        });
+
+        const cancelBtn = document.createElement('button');
+        cancelBtn.textContent = 'Cancel';
+        cancelBtn.type = 'button';
+        cancelBtn.addEventListener('click', () => {
+          this.selected = new Set(this.tempSelected);
+          this.updateCheckboxesFromSelected();
+          this.updateInputLabel();
+          this.toggleList(false);
+          this.input.focus(); // Send focus back to combobox field
+        });
+
+        footer.appendChild(saveBtn);
+        footer.appendChild(cancelBtn);
+        this.list.appendChild(footer);
+      }
+
+      bindEvents() {
+        this.input.addEventListener('click', () => this.toggleList(true));
+        this.input.addEventListener('keydown', (e) => this.onKeyDown(e));
+
+        // Keep listbox open unless focus leaves container
+        this.container.addEventListener('focusout', () => {
+          setTimeout(() => {
+            if (!this.container.contains(document.activeElement)) {
+              this.toggleList(false);
+            }
+          }, 0);
+        });
+      }
+
+      toggleList(show) {
+        this.isOpen = show;
+        this.container.classList.toggle('open', show);
+        this.input.setAttribute('aria-expanded', show);
+        if (show) {
+          this.tempSelected = new Set(this.selected);
+        }
+        this.setActive(this.activeIndex);
+      }
+
+      setActive(index) {
+        const options = this.list.querySelectorAll('.fruitbox-option');
+        if (index < 0 || index >= options.length) return;
+        options.forEach((opt) => opt.classList.remove('option-active'));
+        options[index].classList.add('option-active');
+        this.input.setAttribute('aria-activedescendant', options[index].id);
+        options[index].scrollIntoView({ block: 'nearest' });
+        this.activeIndex = index;
+      }
+
+      onKeyDown(e) {
+        const max = this.options.length - 1;
+        const currentOption = this.list.children[this.activeIndex];
+        const checkbox = currentOption?.querySelector('input');
+
+        switch (e.key) {
+          case 'ArrowDown':
+            e.preventDefault();
+            this.toggleList(true);
+            this.setActive(Math.min(this.activeIndex + 1, max));
+            break;
+          case 'ArrowUp':
+            e.preventDefault();
+            this.toggleList(true);
+            this.setActive(Math.max(this.activeIndex - 1, 0));
+            break;
+          case 'Home':
+            e.preventDefault();
+            this.setActive(0);
+            break;
+          case 'End':
+            e.preventDefault();
+            this.setActive(max);
+            break;
+          case 'Enter':
+          case ' ':
+            e.preventDefault();
+            if (this.isOpen && checkbox) {
+              checkbox.checked = !checkbox.checked;
+              this.toggleSelection(checkbox.value, checkbox.checked, currentOption);
+            } else {
+              this.toggleList(true);
+            }
+            break;
+          case 'Escape':
+            e.preventDefault();
+            this.toggleList(false);
+            break;
+          default:
+            if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+              this.search += e.key.toLowerCase();
+              this.searchAndActivate();
+              clearTimeout(this.searchTimer);
+              this.searchTimer = setTimeout(() => (this.search = ''), 500);
+            }
+        }
+      }
+
+      toggleSelection(label, isChecked, optionEl) {
+        isChecked ? this.selected.add(label) : this.selected.delete(label);
+        this.updateInputLabel();
+
+        if (!optionEl) {
+          const index = this.options.indexOf(label);
+          optionEl = this.list.querySelector(`#${this.idBase}-option-${index}`);
+        }
+        if (optionEl) {
+          optionEl.setAttribute('aria-selected', isChecked.toString());
+        }
+      }
+
+      updateInputLabel() {
+        const values = Array.from(this.selected);
+        this.input.textContent = values.length > 0
+          ? values.join(', ')
+          : 'Select options';
+      }
+
+      updateCheckboxesFromSelected() {
+        this.optionCheckboxes.forEach(({ checkbox, wrapper, label }) => {
+          const isChecked = this.selected.has(label);
+          checkbox.checked = isChecked;
+          wrapper.setAttribute('aria-selected', isChecked.toString());
+        });
+      }
+
+      searchAndActivate() {
+        const matchIndex = this.options.findIndex(opt =>
+          opt.toLowerCase().startsWith(this.search)
+        );
+        if (matchIndex !== -1) {
+          this.setActive(matchIndex);
+        }
+      }
+    }
+
+    // Example usage
+    window.addEventListener('DOMContentLoaded', () => {
+      const fruitOptions = [
+        'Apple', 'Banana', 'Blueberry', 'Boysenberry',
+        'Cherry', 'Cranberry', 'Durian', 'Eggplant',
+        'Fig', 'Grape', 'Guava', 'Huckleberry'
+      ];
+
+      const container = document.getElementById('combobox-container');
+
+      new CheckboxSelect({
+        container,
+        labelText: 'Favorite Fruits',
+        options: fruitOptions
+      });
+    });
+  </script>
+
+</body>
+</html>
