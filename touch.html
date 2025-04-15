@@ -186,45 +186,42 @@
       }
 
       renderOptions() {
-        this.list.innerHTML = '';
-        this.optionCheckboxes = [];
+  this.list.innerHTML = '';
+  this.optionCheckboxes = [];
 
-        this.options.forEach((label, index) => {
-            const wrapper = document.createElement('label'); // use label to wrap everything
-            wrapper.className = 'fruitbox-option';
-            wrapper.setAttribute('role', 'option');
-            wrapper.setAttribute('aria-selected', 'false');
-            wrapper.id = `${this.idBase}-option-${index}`;
-            wrapper.tabIndex = -1;
-            wrapper.style.width = '100%'; // ensure full-width click area
+  this.options.forEach((label, index) => {
+    const optionLabel = document.createElement('label');
+    optionLabel.className = 'fruitbox-option';
+    optionLabel.setAttribute('role', 'option');
+    optionLabel.setAttribute('aria-selected', 'false');
+    optionLabel.id = `${this.idBase}-option-${index}`;
+    optionLabel.tabIndex = -1;
+    optionLabel.style.width = '100%'; // full width clickable
 
-            const checkbox = document.createElement('input');
-            checkbox.type = 'checkbox';
-            checkbox.value = label;
-            checkbox.tabIndex = -1; // no need for ID or label.for anymore
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.value = label;
+    checkbox.tabIndex = -1;
 
-            const span = document.createElement('span');
-            span.textContent = label;
-            span.style.cursor = 'pointer';
-            span.style.flex = '1';
+    const span = document.createElement('span');
+    span.textContent = label;
+    span.style.flex = '1';
 
-            wrapper.appendChild(checkbox);
-            wrapper.appendChild(span);
+    optionLabel.appendChild(checkbox);
+    optionLabel.appendChild(span);
 
+    // Clicking the entire label toggles the checkbox
+    optionLabel.addEventListener('click', (e) => {
+      // Allow native checkbox toggle, but we also update selection manually
+      const isChecked = checkbox.checked;
+      this.toggleSelection(label, isChecked, optionLabel);
+    });
 
-          checkboxLabel.addEventListener('mousedown', (e) => e.preventDefault());
+    this.list.appendChild(optionLabel);
+    this.optionCheckboxes.push({ checkbox, wrapper: optionLabel, label });
+  });
+}
 
-          checkbox.addEventListener('click', () => {
-            this.toggleSelection(label, checkbox.checked, wrapper);
-          });
-
-          this.list.appendChild(wrapper);
-          wrapper.appendChild(checkbox);
-          wrapper.appendChild(checkboxLabel);
-
-          this.optionCheckboxes.push({ checkbox, wrapper, label });
-        });
-      }
 
       renderFooter() {
         this.footer.innerHTML = '';
