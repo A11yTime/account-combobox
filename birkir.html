@@ -2,51 +2,44 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Combobox with Checkboxes</title>
+  <title>Listbox with Checkboxes</title>
   <style>
     body {
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  padding: 2rem;
-  background: #f0f2f5;
-}
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      padding: 2rem;
+      background: #f0f2f5;
+    }
 
-.fruitbox {
-  position: relative;
-  display: inline-block;
-  width: 280px;
-  margin-bottom: 2rem;
-}
+    .fruitbox {
+      position: relative;
+      display: inline-block;
+      width: 280px;
+      margin-bottom: 2rem;
+    }
 
-.fruitbox-label {
-  margin-bottom: 6px;
-  display: block;
-  font-weight: 600;
-  color: #333;
-  font-size: 1rem;
-}
+    .fruitbox-label {
+      margin-bottom: 6px;
+      display: block;
+      font-weight: 600;
+      color: #333;
+      font-size: 1rem;
+    }
 
-.fruitbox-input {
-  border: 1px solid #ccc;
-  padding: 10px 12px;
-  cursor: pointer;
-  background: #fff;
-  border-radius: 6px;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-  transition: border 0.2s, box-shadow 0.2s;
-}
+    .fruitbox-input {
+      border: 1px solid #ccc;
+      padding: 10px 12px;
+      background: #fff;
+      border-radius: 6px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
 
-.fruitbox-input:focus {
-  outline: none;
-  border-color: #0078d4;
-  box-shadow: 0 0 0 2px rgba(0,120,212,0.2);
-}
+    .fruitbox.open .fruitbox-list,
+    .fruitbox.open .fruitbox-buttons {
+      display: block;
+    }
 
-.fruitbox.open .fruitbox-list,
-.fruitbox.open .fruitbox-buttons {
-  display: block;
-}
-
-.fruitbox-list {
+   
+    .fruitbox-list {
   position: absolute;
   top: 100%;
   left: 0;
@@ -54,41 +47,42 @@
   background: #fff;
   border: 1px solid #ccc;
   border-radius: 6px 6px 0 0;
-  max-height: 400px; /* Updated max-height */
-  overflow-y: hidden; /* Disable vertical scrolling */
-  overflow-x: auto; /* Enable horizontal scrolling if needed */
+  max-height: 300px;        /* 👈 Set your desired max height here */
+  overflow-y: auto;         /* 👈 Enables vertical scrolling */
+  overflow-x: hidden;       /* 👈 Hides horizontal scroll */
   display: none;
   margin-top: 6px;
   box-shadow: 0 4px 12px rgba(0,0,0,0.1);
   z-index: 10;
 }
 
-.fruitbox-option {
-  padding: 10px 12px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  transition: background 0.2s;
-  border-bottom: 1px solid #f0f0f0;
-  outline: none;
-}
 
-.fruitbox-option:last-child {
-  border-bottom: none;
-}
+    .fruitbox-option {
+      padding: 10px 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      transition: background 0.2s;
+      border-bottom: 1px solid #f0f0f0;
+      outline: none;
+    }
 
-.fruitbox-option:hover,
-.fruitbox-option.option-active {
-  background: #e6f3ff;
-}
+    .fruitbox-option:last-child {
+      border-bottom: none;
+    }
 
-.fruitbox-option input {
-  margin-right: 10px;
-}
+    .fruitbox-option:hover,
+    .fruitbox-option.option-active {
+      background: #e6f3ff;
+    }
 
-.fruitbox-buttons {
+    .fruitbox-option input {
+      margin-right: 10px;
+    }
+
+    .fruitbox-buttons {
   position: absolute;
-  top: calc(100% + 6px + 400px); /* Adjusted position based on new max-height */
+  top: 100%;
   left: 0;
   right: 0;
   background: #fafafa;
@@ -99,33 +93,31 @@
   padding: 8px 12px;
   box-shadow: 0 4px 12px rgba(0,0,0,0.1);
   z-index: 9;
-  overflow-y: hidden; /* Disable vertical scrolling */
-  overflow-x: auto; /* Enable horizontal scrolling if needed */
 }
 
-.fruitbox-buttons button {
-  padding: 6px 16px;
-  font-size: 0.9rem;
-  border: none;
-  border-radius: 4px;
-  background-color: #0078d4;
-  color: #fff;
-  cursor: pointer;
-  transition: background 0.2s;
-}
 
-.fruitbox-buttons button:hover {
-  background-color: #005a9e;
-}
+    .fruitbox-buttons button {
+      padding: 6px 16px;
+      font-size: 0.9rem;
+      border: none;
+      border-radius: 4px;
+      background-color: #0078d4;
+      color: #fff;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
 
-.fruitbox-buttons button:last-child {
-  background-color: #888;
-}
+    .fruitbox-buttons button:hover {
+      background-color: #005a9e;
+    }
 
-.fruitbox-buttons button:last-child:hover {
-  background-color: #666;
-}
+    .fruitbox-buttons button:last-child {
+      background-color: #888;
+    }
 
+    .fruitbox-buttons button:last-child:hover {
+      background-color: #666;
+    }
   </style>
 </head>
 <body>
@@ -133,7 +125,7 @@
   <div id="combobox-container"></div>
 
   <script>
-    class CheckboxSelect {
+    class CheckboxListbox {
       constructor({ container, labelText, options }) {
         this.container = container;
         this.labelText = labelText;
@@ -163,18 +155,20 @@
         this.input = document.createElement('div');
         this.input.className = 'fruitbox-input';
         this.input.id = this.idBase + '-input';
-        this.input.setAttribute('role', 'combobox');
+        this.input.setAttribute('role', 'button'); // ✅ updated role
         this.input.setAttribute('aria-haspopup', 'listbox');
-        this.input.setAttribute('aria-expanded', 'false');
-        this.input.setAttribute('tabindex', '0');
+        this.input.setAttribute('aria-expanded', 'false'); // ✅ keep expanded
+        this.input.setAttribute('tabindex', '0'); // ✅ focusable
         this.input.setAttribute('aria-labelledby', this.label.id);
+        this.input.textContent = 'Select options';
 
         this.list = document.createElement('div');
         this.list.className = 'fruitbox-list';
         this.list.id = this.idBase + '-list';
         this.list.setAttribute('role', 'listbox');
         this.list.setAttribute('aria-labelledby', this.label.id);
-        this.list.setAttribute('tabindex', '-1'); // Updated tabindex to -1
+        this.list.setAttribute('aria-activedescendant', '');
+        this.list.setAttribute('tabindex', '0'); // listbox is now navigable
 
         this.footer = document.createElement('div');
         this.footer.className = 'fruitbox-buttons';
@@ -182,50 +176,44 @@
         this.container.appendChild(this.label);
         this.container.appendChild(this.input);
         this.container.appendChild(this.list);
-        this.container.appendChild(this.footer); // Now outside listbox
+        this.container.appendChild(this.footer);
 
         this.renderOptions();
         this.renderFooter();
-        this.updateInputLabel();
-      }
-
+        }
       renderOptions() {
-  this.list.innerHTML = '';
-  this.optionCheckboxes = [];
+        this.list.innerHTML = '';
+        this.optionCheckboxes = [];
 
-  this.options.forEach((label, index) => {
-    const optionLabel = document.createElement('label');
-    optionLabel.className = 'fruitbox-option';
-    optionLabel.setAttribute('role', 'option');
-    optionLabel.setAttribute('aria-selected', 'false');
-    optionLabel.id = `${this.idBase}-option-${index}`;
-    optionLabel.tabIndex = -1;
-    optionLabel.style.width = '100%'; // full width clickable
+        this.options.forEach((label, index) => {
+          const optionLabel = document.createElement('label');
+          optionLabel.className = 'fruitbox-option';
+          optionLabel.setAttribute('role', 'option');
+          optionLabel.setAttribute('aria-selected', 'false');
+          optionLabel.id = `${this.idBase}-option-${index}`;
+          optionLabel.tabIndex = -1;
 
-    const checkbox = document.createElement('input');
-    checkbox.type = 'checkbox';
-    checkbox.value = label;
-    checkbox.tabIndex = -1;
+          const checkbox = document.createElement('input');
+          checkbox.type = 'checkbox';
+          checkbox.value = label;
+          checkbox.tabIndex = -1;
 
-    const span = document.createElement('span');
-    span.textContent = label;
-    span.style.flex = '1';
+          const span = document.createElement('span');
+          span.textContent = label;
+          span.style.flex = '1';
 
-    optionLabel.appendChild(checkbox);
-    optionLabel.appendChild(span);
+          optionLabel.appendChild(checkbox);
+          optionLabel.appendChild(span);
 
-    // Clicking the entire label toggles the checkbox
-    optionLabel.addEventListener('click', (e) => {
-      // Allow native checkbox toggle, but we also update selection manually
-      const isChecked = checkbox.checked;
-      this.toggleSelection(label, isChecked, optionLabel);
-    });
+          optionLabel.addEventListener('click', () => {
+            const isChecked = checkbox.checked;
+            this.toggleSelection(label, isChecked, optionLabel);
+          });
 
-    this.list.appendChild(optionLabel);
-    this.optionCheckboxes.push({ checkbox, wrapper: optionLabel, label });
-  });
-}
-
+          this.list.appendChild(optionLabel);
+          this.optionCheckboxes.push({ checkbox, wrapper: optionLabel, label });
+        });
+      }
 
       renderFooter() {
         this.footer.innerHTML = '';
@@ -236,7 +224,6 @@
         saveBtn.addEventListener('click', () => {
           this.tempSelected = new Set(this.selected);
           this.toggleList(false);
-          this.input.focus();
         });
 
         const cancelBtn = document.createElement('button');
@@ -247,7 +234,6 @@
           this.updateCheckboxesFromSelected();
           this.updateInputLabel();
           this.toggleList(false);
-          this.input.focus();
         });
 
         this.footer.appendChild(saveBtn);
@@ -255,34 +241,48 @@
       }
 
       bindEvents() {
-        this.input.addEventListener('click', () => this.toggleList(true));
-        this.input.addEventListener('keydown', (e) => this.onKeyDown(e));
+        this.input.addEventListener('click', () => {
+            this.toggleList(true);
+        });
+
+        // ✅ Add key support for role="button"
+        this.input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            this.toggleList(true);
+            }
+        });
+
+        this.list.addEventListener('keydown', (e) => this.onKeyDown(e));
 
         this.container.addEventListener('focusout', () => {
-          setTimeout(() => {
+            setTimeout(() => {
             if (!this.container.contains(document.activeElement)) {
-              this.toggleList(false);
+                this.toggleList(false);
             }
-          }, 0);
+            }, 0);
         });
-      }
-
-      toggleList(show) {
-        this.isOpen = show;
-        this.container.classList.toggle('open', show);
-        this.input.setAttribute('aria-expanded', show);
-        if (show) {
-          this.tempSelected = new Set(this.selected);
         }
-        this.setActive(this.activeIndex);
-      }
+
+
+        toggleList(show) {
+  this.isOpen = show;
+  this.container.classList.toggle('open', show);
+  this.input.setAttribute('aria-expanded', show);
+  if (show) {
+    this.list.focus();
+    this.tempSelected = new Set(this.selected);
+    this.setActive(this.activeIndex);
+  }
+}
+
 
       setActive(index) {
         const options = this.list.querySelectorAll('.fruitbox-option');
         if (index < 0 || index >= options.length) return;
         options.forEach((opt) => opt.classList.remove('option-active'));
         options[index].classList.add('option-active');
-        this.input.setAttribute('aria-activedescendant', options[index].id);
+        this.list.setAttribute('aria-activedescendant', options[index].id);
         options[index].scrollIntoView({ block: 'nearest' });
         this.activeIndex = index;
       }
@@ -296,50 +296,31 @@
         switch (e.key) {
           case 'ArrowDown':
             e.preventDefault();
-            this.toggleList(true);
             this.setActive(Math.min(this.activeIndex + 1, max));
             break;
           case 'ArrowUp':
             e.preventDefault();
-            this.toggleList(true);
             this.setActive(Math.max(this.activeIndex - 1, 0));
             break;
           case 'Home':
             e.preventDefault();
-            this.toggleList(true);
             this.setActive(0);
             break;
           case 'End':
             e.preventDefault();
-            this.toggleList(true);
             this.setActive(max);
             break;
           case 'Enter':
-            e.preventDefault();
-            if (this.isOpen) {
-              if (document.activeElement === this.input) {
-                this.toggleList(false);
-              } else if (checkbox) {
-                checkbox.checked = !checkbox.checked;
-                this.toggleSelection(checkbox.value, checkbox.checked, currentOption);
-              }
-            } else {
-              this.toggleList(true);
-            }
-            break;
           case ' ':
             e.preventDefault();
-            if (this.isOpen && checkbox) {
+            if (checkbox) {
               checkbox.checked = !checkbox.checked;
               this.toggleSelection(checkbox.value, checkbox.checked, currentOption);
-            } else {
-              this.toggleList(true);
             }
             break;
           case 'Escape':
             e.preventDefault();
             this.toggleList(false);
-            this.input.focus();
             break;
           default:
             if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
@@ -398,7 +379,7 @@
 
       const container = document.getElementById('combobox-container');
 
-      new CheckboxSelect({
+      new CheckboxListbox({
         container,
         labelText: 'Favorite Fruits',
         options: fruitOptions
