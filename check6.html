@@ -139,8 +139,8 @@
         this.options.forEach((label, index) => {
           const wrapper = document.createElement('div');
           wrapper.className = 'fruitbox-option';
-          wrapper.setAttribute('role', 'checkbox');
-          wrapper.setAttribute('aria-checked', 'false');
+          wrapper.setAttribute('role', 'option');
+          wrapper.setAttribute('aria-selected', 'false');
           wrapper.id = `${this.idBase}-option-${index}`;
           wrapper.tabIndex = -1;
 
@@ -152,61 +152,58 @@
 
           const checkboxLabel = document.createElement('label');
           checkboxLabel.textContent = label;
+          checkboxLabel.htmlFor = checkbox.id;
           checkboxLabel.style.cursor = 'pointer';
 
-          // Prevent label click from closing list
+          // Prevent default to avoid listbox closing
           checkboxLabel.addEventListener('mousedown', (e) => e.preventDefault());
-          checkboxLabel.addEventListener('click', (e) => {
-            checkbox.checked = !checkbox.checked;
-            this.toggleSelection(label, checkbox.checked, wrapper);
-          });
 
           checkbox.addEventListener('click', () => {
             this.toggleSelection(label, checkbox.checked, wrapper);
           });
 
+          this.list.appendChild(wrapper);
           wrapper.appendChild(checkbox);
           wrapper.appendChild(checkboxLabel);
-          this.list.appendChild(wrapper);
+
           this.optionCheckboxes.push({ checkbox, wrapper, label });
         });
       }
 
       renderFooter() {
-  const footer = document.createElement('div');
-  footer.className = 'fruitbox-list-footer';
+        const footer = document.createElement('div');
+        footer.className = 'fruitbox-list-footer';
 
-  const saveBtn = document.createElement('button');
-  saveBtn.textContent = 'Save';
-  saveBtn.type = 'button';
-  saveBtn.addEventListener('click', () => {
-    this.tempSelected = new Set(this.selected);
-    this.toggleList(false);
-    this.input.focus(); // ✅ Return focus to input
-  });
+        const saveBtn = document.createElement('button');
+        saveBtn.textContent = 'Save';
+        saveBtn.type = 'button';
+        saveBtn.addEventListener('click', () => {
+          this.tempSelected = new Set(this.selected);
+          this.toggleList(false);
+          this.input.focus(); // Send focus back to combobox field
+        });
 
-  const cancelBtn = document.createElement('button');
-  cancelBtn.textContent = 'Cancel';
-  cancelBtn.type = 'button';
-  cancelBtn.addEventListener('click', () => {
-    this.selected = new Set(this.tempSelected);
-    this.updateCheckboxesFromSelected();
-    this.updateInputLabel();
-    this.toggleList(false);
-    this.input.focus(); // ✅ Return focus to input
-  });
+        const cancelBtn = document.createElement('button');
+        cancelBtn.textContent = 'Cancel';
+        cancelBtn.type = 'button';
+        cancelBtn.addEventListener('click', () => {
+          this.selected = new Set(this.tempSelected);
+          this.updateCheckboxesFromSelected();
+          this.updateInputLabel();
+          this.toggleList(false);
+          this.input.focus(); // Send focus back to combobox field
+        });
 
-  footer.appendChild(saveBtn);
-  footer.appendChild(cancelBtn);
-  this.list.appendChild(footer);
-}
-
+        footer.appendChild(saveBtn);
+        footer.appendChild(cancelBtn);
+        this.list.appendChild(footer);
+      }
 
       bindEvents() {
         this.input.addEventListener('click', () => this.toggleList(true));
         this.input.addEventListener('keydown', (e) => this.onKeyDown(e));
 
-        // Only close if focus is outside of container
+        // Keep listbox open unless focus leaves container
         this.container.addEventListener('focusout', () => {
           setTimeout(() => {
             if (!this.container.contains(document.activeElement)) {
@@ -254,13 +251,13 @@
       break;
     case 'Home':
       e.preventDefault();
-      this.toggleList(true);
-      this.setActive(0); // First checkbox
+      this.toggleList(true); // Ensure list is open
+      this.setActive(0);     // Go to first checkbox
       break;
     case 'End':
       e.preventDefault();
-      this.toggleList(true);
-      this.setActive(max); // Last checkbox
+      this.toggleList(true); // Ensure list is open
+      this.setActive(max);   // Go to last checkbox
       break;
     case 'Enter':
     case ' ':
@@ -296,7 +293,7 @@
           optionEl = this.list.querySelector(`#${this.idBase}-option-${index}`);
         }
         if (optionEl) {
-          optionEl.setAttribute('aria-checked', isChecked.toString());
+          optionEl.setAttribute('aria-selected', isChecked.toString());
         }
       }
 
@@ -304,14 +301,14 @@
         const values = Array.from(this.selected);
         this.input.textContent = values.length > 0
           ? values.join(', ')
-          : 'Select options...';
+          : 'Select options';
       }
 
       updateCheckboxesFromSelected() {
         this.optionCheckboxes.forEach(({ checkbox, wrapper, label }) => {
           const isChecked = this.selected.has(label);
           checkbox.checked = isChecked;
-          wrapper.setAttribute('aria-checked', isChecked.toString());
+          wrapper.setAttribute('aria-selected', isChecked.toString());
         });
       }
 

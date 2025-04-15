@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Combobox with Checkboxes</title>
+  <title>Combobox with Checkboxes (Tab/Home/End Navigation)</title>
   <style>
     body {
       font-family: sans-serif;
@@ -53,12 +53,13 @@
       align-items: center;
     }
 
-    .fruitbox-option input {
-      margin-right: 8px;
+    .fruitbox-option:focus {
+      outline: none;
+      background: #e5f3ff;
     }
 
-    .fruitbox-option.option-active {
-      background: #bde4ff;
+    .fruitbox-option input {
+      margin-right: 8px;
     }
 
     .fruitbox-list-footer {
@@ -87,12 +88,9 @@
         this.labelText = labelText;
         this.options = options;
 
-        this.activeIndex = 0;
-        this.search = '';
-        this.searchTimer = null;
-        this.isOpen = false;
         this.selected = new Set();
         this.tempSelected = new Set();
+        this.isOpen = false;
 
         this.idBase = 'fruitbox-' + Math.random().toString(36).slice(2, 8);
 
@@ -142,7 +140,7 @@
           wrapper.setAttribute('role', 'checkbox');
           wrapper.setAttribute('aria-checked', 'false');
           wrapper.id = `${this.idBase}-option-${index}`;
-          wrapper.tabIndex = -1;
+          wrapper.tabIndex = 0; // Enable Tab navigation
 
           const checkbox = document.createElement('input');
           checkbox.type = 'checkbox';
@@ -165,6 +163,23 @@
             this.toggleSelection(label, checkbox.checked, wrapper);
           });
 
+          // Handle Home/End navigation
+         // Handle Home/End and Space key
+wrapper.addEventListener('keydown', (e) => {
+  if (e.key === 'Home') {
+    e.preventDefault();
+    this.optionCheckboxes[0].wrapper.focus();
+  } else if (e.key === 'End') {
+    e.preventDefault();
+    this.optionCheckboxes[this.optionCheckboxes.length - 1].wrapper.focus();
+  } else if (e.key === ' ') {
+    e.preventDefault();
+    checkbox.checked = !checkbox.checked;
+    this.toggleSelection(label, checkbox.checked, wrapper);
+  }
+});
+
+
           wrapper.appendChild(checkbox);
           wrapper.appendChild(checkboxLabel);
           this.list.appendChild(wrapper);
@@ -173,40 +188,39 @@
       }
 
       renderFooter() {
-  const footer = document.createElement('div');
-  footer.className = 'fruitbox-list-footer';
+        const footer = document.createElement('div');
+        footer.className = 'fruitbox-list-footer';
 
-  const saveBtn = document.createElement('button');
-  saveBtn.textContent = 'Save';
-  saveBtn.type = 'button';
-  saveBtn.addEventListener('click', () => {
-    this.tempSelected = new Set(this.selected);
-    this.toggleList(false);
-    this.input.focus(); // ✅ Return focus to input
-  });
+        const saveBtn = document.createElement('button');
+        saveBtn.textContent = 'Save';
+        saveBtn.type = 'button';
+        saveBtn.addEventListener('click', () => {
+          this.tempSelected = new Set(this.selected);
+          this.toggleList(false);
+          this.input.focus();
+        });
 
-  const cancelBtn = document.createElement('button');
-  cancelBtn.textContent = 'Cancel';
-  cancelBtn.type = 'button';
-  cancelBtn.addEventListener('click', () => {
-    this.selected = new Set(this.tempSelected);
-    this.updateCheckboxesFromSelected();
-    this.updateInputLabel();
-    this.toggleList(false);
-    this.input.focus(); // ✅ Return focus to input
-  });
+        const cancelBtn = document.createElement('button');
+        cancelBtn.textContent = 'Cancel';
+        cancelBtn.type = 'button';
+        cancelBtn.addEventListener('click', () => {
+          this.selected = new Set(this.tempSelected);
+          this.updateCheckboxesFromSelected();
+          this.updateInputLabel();
+          this.toggleList(false);
+          this.input.focus();
+        });
 
-  footer.appendChild(saveBtn);
-  footer.appendChild(cancelBtn);
-  this.list.appendChild(footer);
-}
-
+        footer.appendChild(saveBtn);
+        footer.appendChild(cancelBtn);
+        this.list.appendChild(footer);
+      }
 
       bindEvents() {
         this.input.addEventListener('click', () => this.toggleList(true));
         this.input.addEventListener('keydown', (e) => this.onKeyDown(e));
 
-        // Only close if focus is outside of container
+        // Close if focus leaves the widget
         this.container.addEventListener('focusout', () => {
           setTimeout(() => {
             if (!this.container.contains(document.activeElement)) {
@@ -223,69 +237,22 @@
         if (show) {
           this.tempSelected = new Set(this.selected);
         }
-        this.setActive(this.activeIndex);
-      }
-
-      setActive(index) {
-        const options = this.list.querySelectorAll('.fruitbox-option');
-        if (index < 0 || index >= options.length) return;
-        options.forEach((opt) => opt.classList.remove('option-active'));
-        options[index].classList.add('option-active');
-        this.input.setAttribute('aria-activedescendant', options[index].id);
-        options[index].scrollIntoView({ block: 'nearest' });
-        this.activeIndex = index;
       }
 
       onKeyDown(e) {
-  const max = this.options.length - 1;
-  const currentOption = this.list.children[this.activeIndex];
-  const checkbox = currentOption?.querySelector('input');
-
-  switch (e.key) {
-    case 'ArrowDown':
-      e.preventDefault();
-      this.toggleList(true);
-      this.setActive(Math.min(this.activeIndex + 1, max));
-      break;
-    case 'ArrowUp':
-      e.preventDefault();
-      this.toggleList(true);
-      this.setActive(Math.max(this.activeIndex - 1, 0));
-      break;
-    case 'Home':
-      e.preventDefault();
-      this.toggleList(true);
-      this.setActive(0); // First checkbox
-      break;
-    case 'End':
-      e.preventDefault();
-      this.toggleList(true);
-      this.setActive(max); // Last checkbox
-      break;
-    case 'Enter':
-    case ' ':
-      e.preventDefault();
-      if (this.isOpen && checkbox) {
-        checkbox.checked = !checkbox.checked;
-        this.toggleSelection(checkbox.value, checkbox.checked, currentOption);
-      } else {
-        this.toggleList(true);
+        switch (e.key) {
+          case 'Enter':
+          case ' ':
+            e.preventDefault();
+            this.toggleList(true);
+            this.optionCheckboxes[0]?.wrapper.focus();
+            break;
+          case 'Escape':
+            e.preventDefault();
+            this.toggleList(false);
+            break;
+        }
       }
-      break;
-    case 'Escape':
-      e.preventDefault();
-      this.toggleList(false);
-      break;
-    default:
-      if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
-        this.search += e.key.toLowerCase();
-        this.searchAndActivate();
-        clearTimeout(this.searchTimer);
-        this.searchTimer = setTimeout(() => (this.search = ''), 500);
-      }
-  }
-}
-
 
       toggleSelection(label, isChecked, optionEl) {
         isChecked ? this.selected.add(label) : this.selected.delete(label);
@@ -314,18 +281,9 @@
           wrapper.setAttribute('aria-checked', isChecked.toString());
         });
       }
-
-      searchAndActivate() {
-        const matchIndex = this.options.findIndex(opt =>
-          opt.toLowerCase().startsWith(this.search)
-        );
-        if (matchIndex !== -1) {
-          this.setActive(matchIndex);
-        }
-      }
     }
 
-    // Example usage
+    // Initialize the component
     window.addEventListener('DOMContentLoaded', () => {
       const fruitOptions = [
         'Apple', 'Banana', 'Blueberry', 'Boysenberry',
