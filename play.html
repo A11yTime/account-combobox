@@ -277,8 +277,7 @@
 
       onKeyDown(e) {
   const max = this.options.length - 1;
-  const options = this.list.querySelectorAll('.fruitbox-option');
-  const currentOption = options[this.activeIndex];
+  const currentOption = this.list.children[this.activeIndex];
   const checkbox = currentOption?.querySelector('input');
 
   switch (e.key) {
@@ -294,29 +293,15 @@
       break;
     case 'Home':
       e.preventDefault();
-      this.toggleList(true);
-      this.setActive(0);
+      this.toggleList(true); // Ensure list is open
+      this.setActive(0);     // Go to first checkbox
       break;
     case 'End':
       e.preventDefault();
-      this.toggleList(true);
-      this.setActive(max);
+      this.toggleList(true); // Ensure list is open
+      this.setActive(max);   // Go to last checkbox
       break;
     case 'Enter':
-      e.preventDefault();
-      if (this.isOpen) {
-        // If list is open and option is focused, toggle checkbox
-        if (document.activeElement === this.input) {
-          // If focus is on the combobox, close listbox
-          this.toggleList(false);
-        } else if (checkbox) {
-          checkbox.checked = !checkbox.checked;
-          this.toggleSelection(checkbox.value, checkbox.checked, currentOption);
-        }
-      } else {
-        this.toggleList(true);
-      }
-      break;
     case ' ':
       e.preventDefault();
       if (this.isOpen && checkbox) {
@@ -329,7 +314,6 @@
     case 'Escape':
       e.preventDefault();
       this.toggleList(false);
-      this.input.focus();
       break;
     default:
       if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
