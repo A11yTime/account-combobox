@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Combobox With Link Options</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      padding: 2rem;
+      background: #f4f6f9;
+      color: #333;
+    }
+
+    .fruitbox {
+      position: relative;
+      display: inline-block;
+      width: 280px;
+      margin-bottom: 2rem;
+    }
+
+    .fruitbox-label {
+      margin-bottom: 6px;
+      display: block;
+      font-weight: 600;
+      font-size: 1rem;
+      color: #444;
+    }
+
+    .fruitbox-input {
+      border: 1px solid #ccc;
+      padding: 10px 14px;
+      cursor: pointer;
+      background: #fff;
+      border-radius: 6px;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+      transition: border 0.2s, box-shadow 0.2s;
+    }
+
+    .fruitbox-input:focus {
+      outline: none;
+      border-color: #0078d4;
+      box-shadow: 0 0 0 2px rgba(0, 120, 212, 0.2);
+    }
+
+    .fruitbox.open .fruitbox-list {
+      display: block;
+    }
+
+    .fruitbox-list {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: #fff;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      margin-top: 6px;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1);
+      max-height: 200px;
+      overflow-y: auto;
+      display: none;
+      z-index: 999;
+    }
+
+    .fruitbox-option {
+      padding: 10px 14px;
+      cursor: pointer;
+      display: block;
+      text-decoration: none;
+      color: #333;
+      transition: background 0.2s, color 0.2s;
+    }
+
+    .fruitbox-option:hover {
+      background-color: #e6f3ff;
+      color: #005a9e;
+    }
+
+    .fruitbox-option.option-active {
+      background-color: #cde8ff;
+      color: #004d87;
+    }
+
+    .fruitbox-option[aria-selected="true"] {
+      font-weight: bold;
+      color: #0078d4;
+    }
+
+    /* Optional: Add a subtle scrollbar style */
+    .fruitbox-list::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .fruitbox-list::-webkit-scrollbar-thumb {
+      background: #ccc;
+      border-radius: 10px;
+    }
+
+    .fruitbox-list::-webkit-scrollbar-thumb:hover {
+      background: #aaa;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="combobox-container"></div>
+
+  <script>
+    class FruitSelect {
+      constructor({ container, labelText, options }) {
+        this.container = container;
+        this.labelText = labelText;
+        this.options = options; // now an array of { label, href }
+
+        this.activeIndex = 0;
+        this.search = '';
+        this.searchTimer = null;
+        this.isOpen = false;
+
+        this.idBase = 'fruitbox-' + Math.random().toString(36).slice(2, 8);
+
+        this.renderHTML();
+        this.bindEvents();
+        this.selectOption(0);
+      }
+
+      renderHTML() {
+        this.container.classList.add('fruitbox');
+
+        this.label = document.createElement('label');
+        this.label.className = 'fruitbox-label';
+        this.label.id = this.idBase + '-label';
+        this.label.textContent = this.labelText;
+
+        this.input = document.createElement('div');
+        this.input.className = 'fruitbox-input';
+        this.input.id = this.idBase + '-input';
+        this.input.setAttribute('role', 'combobox');
+        this.input.setAttribute('aria-haspopup', 'listbox');
+        this.input.setAttribute('aria-expanded', 'false');
+        this.input.setAttribute('tabindex', '0');
+        this.input.setAttribute('aria-labelledby', this.label.id);
+
+        this.list = document.createElement('div');
+        this.list.className = 'fruitbox-list';
+        this.list.id = this.idBase + '-list';
+        this.list.setAttribute('role', 'listbox');
+        this.list.setAttribute('aria-labelledby', this.label.id);
+
+        this.container.appendChild(this.label);
+        this.container.appendChild(this.input);
+        this.container.appendChild(this.list);
+
+        this.renderOptions();
+      }
+
+      renderOptions() {
+        this.list.innerHTML = '';
+        this.options.forEach((opt, index) => {
+          const link = document.createElement('a');
+          link.className = 'fruitbox-option';
+          link.setAttribute('role', 'option');
+          link.id = `${this.idBase}-option-${index}`;
+          link.setAttribute('aria-selected', 'false');
+          link.href = opt.href;
+          link.textContent = opt.label;
+          link.addEventListener('click', (e) => {
+            e.preventDefault(); // prevent navigation
+            this.selectOption(index);
+            this.toggleList(false);
+            window.location.href = opt.href; // navigate manually
+          });
+          this.list.appendChild(link);
+        });
+      }
+
+      bindEvents() {
+        this.input.addEventListener('click', () => this.toggleList(!this.isOpen));
+        this.input.addEventListener('keydown', (e) => this.onKeyDown(e));
+        this.input.addEventListener('blur', () => setTimeout(() => this.toggleList(false), 150));
+      }
+
+      toggleList(show) {
+        this.isOpen = show;
+        this.container.classList.toggle('open', show);
+        this.input.setAttribute('aria-expanded', show);
+      }
+
+      onKeyDown(e) {
+        const max = this.options.length - 1;
+
+        switch (e.key) {
+          case 'ArrowDown':
+            e.preventDefault();
+            this.toggleList(true);
+            this.setActive(Math.min(this.activeIndex + 1, max));
+            break;
+          case 'ArrowUp':
+            e.preventDefault();
+            this.toggleList(true);
+            this.setActive(Math.max(this.activeIndex - 1, 0));
+            break;
+          case 'Home':
+            e.preventDefault();
+            this.setActive(0);
+            break;
+          case 'End':
+            e.preventDefault();
+            this.setActive(max);
+            break;
+          case 'Enter':
+          case ' ':
+            e.preventDefault();
+            if (this.isOpen) {
+              const href = this.options[this.activeIndex].href;
+              this.selectOption(this.activeIndex);
+              this.toggleList(false);
+              window.location.href = href;
+            } else {
+              this.toggleList(true);
+            }
+            break;
+          case 'Escape':
+            e.preventDefault();
+            this.toggleList(false);
+            break;
+          default:
+            if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+              this.search += e.key.toLowerCase();
+              this.searchAndActivate();
+              clearTimeout(this.searchTimer);
+              this.searchTimer = setTimeout(() => (this.search = ''), 500);
+            }
+        }
+      }
+
+      setActive(index) {
+        const options = this.list.querySelectorAll('.fruitbox-option');
+        if (index < 0 || index >= options.length) return;
+        options.forEach((opt) => opt.classList.remove('option-active'));
+        options[index].classList.add('option-active');
+        
+        // Set aria-activedescendant on input
+        this.input.setAttribute('aria-activedescendant', options[index].id); // Corrected to input
+        
+        // Set aria-selected on the active option
+        options.forEach((opt, i) => {
+          opt.setAttribute('aria-selected', i === index ? 'true' : 'false');
+        });
+        
+        options[index].scrollIntoView({ block: 'nearest' });
+        this.activeIndex = index;
+      }
+
+      selectOption(index) {
+        const selected = this.options[index];
+        this.input.textContent = selected.label;
+        const options = this.list.querySelectorAll('.fruitbox-option');
+        options.forEach((opt, i) => {
+          opt.setAttribute('aria-selected', i === index ? 'true' : 'false');
+        });
+        this.setActive(index);
+      }
+
+      searchAndActivate() {
+        const matchIndex = this.options.findIndex(opt =>
+          opt.label.toLowerCase().startsWith(this.search)
+        );
+        if (matchIndex !== -1) {
+          this.setActive(matchIndex);
+        }
+      }
+    }
+
+    // Example usage
+    window.addEventListener('DOMContentLoaded', () => {
+      const fruitOptions = [
+        { label: 'Choose a Fruit', href: '#' },
+        { label: 'Apple', href: '#' },
+        { label: 'Banana', href: '#' },
+        { label: 'Blueberry', href: '#' },
+        { label: 'Boysenberry', href: '#' },
+        { label: 'Cherry', href: '#' },
+        { label: 'Cranberry', href: '#' },
+        { label: 'Durian', href: '#' },
+        { label: 'Eggplant', href: '#' },
+        { label: 'Fig', href: '#' },
+        { label: 'Grape', href: '#' },
+        { label: 'Guava', href: '#' },
+        { label: 'Huckleberry', href: '#' }
+      ];
+
+      const container = document.getElementById('combobox-container');
+
+      new FruitSelect({
+        container,
+        labelText: 'Favorite Fruit',
+        options: fruitOptions
+      });
+    });
+  </script>
+
+</body>
+</html>
