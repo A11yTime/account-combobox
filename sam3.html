@@ -47,20 +47,17 @@
     }
 
     .fruitbox-list {
-      position: absolute;
-      overflow-x: hidden;
-      top: 100%;
-      left: 0;
-      right: 0;
-      background: #fff;
-      border: 1px solid #ccc;
-      border-radius: 6px 6px 0 0;
-      max-height: 220px;
-      overflow-y: auto;
-      display: none;
-      margin-top: 6px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-      z-index: 10;
+    background: #fff;
+    overflow-x: hidden;
+    border: 1px solid #ccc;
+    border-bottom: none;
+    border-radius: 6px 6px 0 0;
+    max-height: 300px;
+    overflow-y: auto;
+    display: none;
+    margin-top: 6px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    z-index: 10;
     }
 
     .fruitbox-option {
@@ -87,18 +84,14 @@
     }
 
     .fruitbox-buttons {
-      position: absolute;
-      top: calc(100% + 226px); /* match list height + margin */
-      left: 0;
-      right: 0;
-      background: #fafafa;
-      border: 1px solid #ccc;
-      border-top: none;
-      border-radius: 0 0 6px 6px;
-      display: none;
-      padding: 8px 12px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-      z-index: 9;
+    background: #fafafa;
+    border: 1px solid #ccc;
+    border-top: none;
+    border-radius: 0 0 6px 6px;
+    display: none;
+    padding: 8px 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    z-index: 9;
     }
 
     .fruitbox-buttons button {
@@ -110,6 +103,7 @@
       color: #fff;
       cursor: pointer;
       transition: background 0.2s;
+      margin-right: 10px;
     }
 
     .fruitbox-buttons button:hover {
@@ -204,6 +198,7 @@
           checkbox.type = 'checkbox';
           checkbox.value = label;
           checkbox.tabIndex = -1;
+          checkbox.setAttribute("aria-hidden", 'true')
 
           const span = document.createElement('span');
           span.textContent = label;

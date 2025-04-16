@@ -198,6 +198,7 @@
           const checkbox = document.createElement('input');
           checkbox.type = 'checkbox';
           checkbox.value = label;
+          checkbox.setAttribute('aria-hidden', 'true');
           checkbox.tabIndex = -1;
 
           const span = document.createElement('span');
@@ -210,6 +211,11 @@
           optionLabel.addEventListener('click', () => {
             const isChecked = checkbox.checked;
             this.toggleSelection(label, isChecked, optionLabel);
+          });
+
+             // Add hover effect for mouse hover over options
+             optionLabel.addEventListener('mouseover', () => {
+            this.setHoverIndex(index);
           });
 
           this.list.appendChild(optionLabel);
@@ -286,6 +292,16 @@
         this.list.setAttribute('aria-activedescendant', options[index].id);
         options[index].scrollIntoView({ block: 'nearest' });
         this.activeIndex = index;
+      }
+
+      setHoverIndex(index) {
+        const options = this.list.querySelectorAll('.fruitbox-option');
+        
+        // Reset background of previous hovered option
+        options.forEach((opt) => opt.classList.remove('option-active'));
+        
+        // Highlight the current hovered option
+        options[index]?.classList.add('option-active');
       }
 
       onKeyDown(e) {
