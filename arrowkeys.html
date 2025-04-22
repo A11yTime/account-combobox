@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Accessible Dropdown (Styled Input)</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 2rem;
+    }
+
+    .form-group {
+      max-width: 300px;
+      margin-bottom: 2rem;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 6px;
+      font-weight: 500;
+      font-size: 14px;
+      color: #333;
+    }
+
+    .accessible-dropdown {
+      position: relative;
+      display: block;
+    }
+
+    .dropdown-toggle {
+      appearance: none;
+      -webkit-appearance: none;
+      background-color: white;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      padding: 8px 12px;
+      width: 100%;
+      text-align: left;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    .dropdown-toggle:focus {
+      outline: none;
+      border-color: #007bff;
+      box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
+    }
+
+    .dropdown-list {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      z-index: 100;
+      border: 1px solid #ccc;
+      background: white;
+      margin: 4px 0 0;
+      padding: 0;
+      list-style: none;
+      width: 100%;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      max-height: 200px;
+      overflow-y: auto;
+    }
+
+    .dropdown-list[hidden] {
+      display: none;
+    }
+
+    .dropdown-list li {
+      padding: 8px 12px;
+      cursor: pointer;
+    }
+
+    .dropdown-list li:focus {
+      background-color: #e0e0e0;
+      outline: none;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="form-group">
+    <label id="dropdown-label" for="dropdown-toggle-1">Choose a fruit</label>
+
+    <div class="accessible-dropdown" data-dropdown id="myDropdown"
+         role="combobox"
+         aria-haspopup="listbox"
+         aria-expanded="false"
+         aria-owns="dropdown-list-1"
+         aria-controls="dropdown-list-1"
+         aria-labelledby="dropdown-label">
+      
+      <button class="dropdown-toggle" type="button" id="dropdown-toggle-1">
+        Select an option
+      </button>
+
+      <ul class="dropdown-list" role="listbox" hidden id="dropdown-list-1">
+        <!-- Options will be injected here -->
+      </ul>
+    </div>
+  </div>
+
+  <script>
+    class AccessibleDropdown {
+      constructor(container, options = []) {
+        this.container = container;
+        this.button = container.querySelector('.dropdown-toggle');
+        this.list = container.querySelector('.dropdown-list');
+        this.isOpen = false;
+        this.justInteractedInternally = false;
+
+        const listId = this.list.id || `dropdown-list-${Math.floor(Math.random() * 10000)}`;
+        const toggleId = this.button.id || `dropdown-toggle-${Math.floor(Math.random() * 10000)}`;
+        this.list.id = listId;
+        this.button.id = toggleId;
+
+        this.container.setAttribute('role', 'combobox');
+        this.container.setAttribute('aria-haspopup', 'listbox');
+        this.container.setAttribute('aria-expanded', 'false');
+        this.container.setAttribute('aria-owns', listId);
+        this.container.setAttribute('aria-controls', listId);
+
+        this.populateOptions(options);
+        this.init();
+      }
+
+      populateOptions(options) {
+        this.list.innerHTML = '';
+        options.forEach((text, index) => {
+          const li = document.createElement('li');
+          li.setAttribute('role', 'option');
+          li.setAttribute('tabindex', '-1');
+          li.textContent = text;
+          li.dataset.index = index;
+          this.list.appendChild(li);
+        });
+        this.options = Array.from(this.list.querySelectorAll('[role="option"]'));
+      }
+
+      init() {
+        const toggleHandler = (e) => {
+          this.justInteractedInternally = true;
+          e.preventDefault();
+          e.stopPropagation();
+          this.toggleDropdown();
+        };
+
+        this.button.addEventListener('click', toggleHandler);
+        this.button.addEventListener('keydown', (e) => this.handleButtonKeyDown(e));
+
+        this.list.addEventListener('click', (e) => {
+          const option = e.target.closest('[role="option"]');
+          if (option) {
+            this.justInteractedInternally = true;
+            this.selectOption(option);
+          }
+        });
+
+        this.list.addEventListener('keydown', (e) => {
+          const option = document.activeElement;
+          if (option && option.getAttribute('role') === 'option') {
+            this.handleOptionKeyDown(e, option);
+          }
+        });
+
+        document.addEventListener('click', (e) => {
+          if (this.justInteractedInternally) {
+            this.justInteractedInternally = false;
+            return;
+          }
+          this.handleClickOutside(e);
+        });
+
+        document.addEventListener('touchstart', (e) => {
+          if (this.justInteractedInternally) {
+            this.justInteractedInternally = false;
+            return;
+          }
+          this.handleClickOutside(e);
+        }, { passive: true });
+      }
+
+      toggleDropdown() {
+  const wasOpen = this.isOpen;
+  this.isOpen = !this.isOpen;
+  this.list.hidden = !this.isOpen;
+  this.container.setAttribute('aria-expanded', this.isOpen.toString());
+
+  // If we're opening (not closing), move focus to first option
+  if (!wasOpen && this.options.length) {
+    setTimeout(() => {
+      this.options[0].focus();
+    }, 0);
+  }
+}
+
+
+      openDropdown() {
+        this.isOpen = true;
+        this.list.hidden = false;
+        this.container.setAttribute('aria-expanded', 'true');
+      }
+
+      closeDropdown() {
+        this.isOpen = false;
+        this.list.hidden = true;
+        this.container.setAttribute('aria-expanded', 'false');
+        this.button.focus();
+      }
+
+      handleButtonKeyDown(e) {
+        if (['ArrowDown', 'Enter', ' '].includes(e.key)) {
+          e.preventDefault();
+          if (!this.isOpen) {
+            this.openDropdown();
+            // Wait for render before focusing
+            setTimeout(() => {
+              if (this.options.length) this.options[0].focus();
+            }, 0);
+          }
+        }
+      }
+
+      handleOptionKeyDown(e, option) {
+        const index = this.options.indexOf(option);
+
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          const next = this.options[index + 1] || this.options[0];
+          next.focus();
+        } else if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          const prev = this.options[index - 1] || this.options[this.options.length - 1];
+          prev.focus();
+        } else if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          this.selectOption(option);
+        } else if (e.key === 'Escape') {
+          this.closeDropdown();
+        }
+      }
+
+      selectOption(option) {
+        this.button.textContent = option.textContent;
+        this.closeDropdown();
+      }
+
+      handleClickOutside(event) {
+        if (!this.isOpen) return;
+        if (!this.container.contains(event.target)) {
+          this.closeDropdown();
+        }
+      }
+    }
+
+    // Initialize dropdown
+    const fruits = ['Apple', 'Banana', 'Cherry', 'Date', 'Elderberry'];
+    const dropdownContainer = document.getElementById('myDropdown');
+    new AccessibleDropdown(dropdownContainer, fruits);
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Accessible Dropdown (Menu Version)</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 2rem;
+    }
+
+    .form-group {
+      position: relative;
+      max-width: 300px;
+      margin-bottom: 2rem;
+    }
+
+    .dropdown-list {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      width: 100%;
+      z-index: 1000;
+      border: 1px solid #ccc;
+      background: white;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      max-height: 200px;
+      overflow-y: auto;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+
+    .dropdown-list[hidden] {
+      display: none;
+    }
+
+    .dropdown-list li {
+      padding: 8px 12px;
+      cursor: pointer;
+    }
+
+    .dropdown-list li:focus {
+      background-color: #e0e0e0;
+      outline: none;
+    }
+
+    .wrapper-button {
+      all: unset;
+      display: block;
+      width: 100%;
+      cursor: pointer;
+      position: relative;
+      border-radius: 4px;
+    }
+
+    .wrapper-button:focus {
+      outline: 2px solid #007bff;
+      outline-offset: 2px;
+    }
+
+    .accessible-dropdown {
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      padding: 8px 12px;
+      background-color: white;
+      font-size: 16px;
+      pointer-events: none;
+    }
+
+    .dropdown-toggle {
+      display: block;
+      width: 100%;
+    }
+
+    .button-label {
+      display: block;
+      font-size: 12px;
+      color: #666;
+      margin-bottom: 4px;
+    }
+
+    .selected-label {
+      display: block;
+      font-size: 16px;
+      color: #000;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="form-group">
+    <!-- Wrapper button with label moved inside -->
+    <button class="wrapper-button" id="wrapperBtn" type="button">
+      <div class="accessible-dropdown" data-dropdown id="myDropdown"
+        role="menu"
+        aria-haspopup="menu"
+        aria-expanded="false"
+        aria-owns="dropdown-list-1"
+        aria-controls="dropdown-list-1"
+        aria-labelledby="dropdown-toggle-1">
+        <span class="dropdown-toggle" id="dropdown-toggle-1">
+          <span class="button-label">Trade</span>
+          <span class="selected-label">Select an option</span>
+        </span>
+      </div>
+    </button>
+
+    <!-- Menu placed directly below the button -->
+    <ul class="dropdown-list" role="menu" hidden id="dropdown-list-1"></ul>
+  </div>
+
+  <script>
+    class AccessibleDropdown {
+      constructor(container, options = []) {
+        this.container = container;
+        this.button = container.querySelector('.dropdown-toggle');
+        this.list = document.getElementById(container.getAttribute('aria-owns'));
+        this.isOpen = false;
+        this.justInteractedInternally = false;
+
+        const listId = this.list.id || `dropdown-list-${Math.floor(Math.random() * 10000)}`;
+        const toggleId = this.button.id || `dropdown-toggle-${Math.floor(Math.random() * 10000)}`;
+        this.list.id = listId;
+        this.button.id = toggleId;
+
+        this.container.setAttribute('aria-owns', listId);
+        this.container.setAttribute('aria-controls', listId);
+
+        this.populateOptions(options);
+        this.init();
+      }
+
+      populateOptions(options) {
+        this.list.innerHTML = '';
+        options.forEach((text, index) => {
+          const li = document.createElement('li');
+          li.setAttribute('role', 'menuitem');
+          li.setAttribute('tabindex', '-1');
+          li.textContent = text;
+          li.dataset.index = index;
+          this.list.appendChild(li);
+        });
+        this.options = Array.from(this.list.querySelectorAll('[role="menuitem"]'));
+      }
+
+      init() {
+        document.getElementById('wrapperBtn').addEventListener('click', (e) => {
+          this.justInteractedInternally = true;
+          e.preventDefault();
+          this.toggleDropdown();
+        });
+
+        this.button.addEventListener('keydown', (e) => this.handleButtonKeyDown(e));
+
+        this.list.addEventListener('click', (e) => {
+          const option = e.target.closest('[role="menuitem"]');
+          if (option) {
+            this.justInteractedInternally = true;
+            this.selectOption(option);
+          }
+        });
+
+        this.list.addEventListener('keydown', (e) => {
+          const option = document.activeElement;
+          if (option && option.getAttribute('role') === 'menuitem') {
+            this.handleOptionKeyDown(e, option);
+          }
+        });
+
+        document.addEventListener('click', (e) => {
+          if (this.justInteractedInternally) {
+            this.justInteractedInternally = false;
+            return;
+          }
+          this.handleClickOutside(e);
+        });
+
+        document.addEventListener('touchstart', (e) => {
+          if (this.justInteractedInternally) {
+            this.justInteractedInternally = false;
+            return;
+          }
+          this.handleClickOutside(e);
+        }, { passive: true });
+      }
+
+      toggleDropdown() {
+        const wasOpen = this.isOpen;
+        this.isOpen = !this.isOpen;
+        this.list.hidden = !this.isOpen;
+        this.container.setAttribute('aria-expanded', this.isOpen.toString());
+
+        if (this.isOpen) {
+          setTimeout(() => {
+            if (this.options.length) {
+              this.options[0].focus();
+            }
+          }, 0);
+        } else {
+          this.closeDropdown();
+        }
+      }
+
+      openDropdown() {
+        this.isOpen = true;
+        this.list.hidden = false;
+        this.container.setAttribute('aria-expanded', 'true');
+        this.positionDropdownListbox();
+      }
+
+      handleButtonKeyDown(e) {
+        if (['ArrowDown', 'Enter', ' '].includes(e.key)) {
+          e.preventDefault();
+          if (!this.isOpen) {
+            this.openDropdown();
+            setTimeout(() => {
+              if (this.options.length) this.options[0].focus();
+            }, 0);
+          }
+        }
+      }
+
+      handleOptionKeyDown(e, option) {
+        const index = this.options.indexOf(option);
+
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          const next = this.options[index + 1] || this.options[0];
+          next.focus();
+        } else if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          const prev = this.options[index - 1] || this.options[this.options.length - 1];
+          prev.focus();
+        } else if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          this.selectOption(option);
+        } else if (e.key === 'Escape') {
+          this.closeDropdown();
+        }
+      }
+
+      selectOption(option) {
+        const label = this.button.querySelector('.selected-label');
+        if (label) {
+          label.textContent = option.textContent;
+        }
+        this.closeDropdown();
+
+        setTimeout(() => {
+          document.getElementById('wrapperBtn').focus();
+        }, 0);
+      }
+
+      closeDropdown() {
+        this.isOpen = false;
+        this.list.hidden = true;
+        this.container.setAttribute('aria-expanded', 'false');
+
+        setTimeout(() => {
+          document.getElementById('wrapperBtn').focus();
+        }, 0);
+      }
+
+      handleClickOutside(event) {
+        if (!this.isOpen) return;
+        if (!this.container.contains(event.target) && !this.list.contains(event.target)) {
+          this.closeDropdown();
+        }
+      }
+
+      positionDropdownListbox() {
+        const wrapper = document.getElementById('wrapperBtn');
+        if (!wrapper) return;
+
+        const rect = wrapper.getBoundingClientRect();
+        this.list.style.position = 'absolute';
+        this.list.style.top = `${rect.bottom + window.scrollY}px`;
+        this.list.style.left = `${rect.left + window.scrollX}px`;
+        this.list.style.width = `${rect.width}px`;
+      }
+    }
+
+    const tradeTypes = [
+      'Covered Call',
+      'Protective Put',
+      'Straddle',
+      'Strangle',
+      'Bull Call Spread',
+      'Bear Put Spread',
+      'Cash-Secured Put',
+      'Iron Condor',
+      'Butterfly Spread',
+      'LEAPS'
+    ];
+
+    const dropdownContainer = document.getElementById('myDropdown');
+    new AccessibleDropdown(dropdownContainer, tradeTypes);
+  </script>
+
+</body>
+</html>
